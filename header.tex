@@ -1,0 +1,58 @@
+\usepackage[T1]{fontenc}
+\usepackage{fourier}
+
+% English language/hyphenation
+\usepackage[english]{babel}
+\usepackage[protrusion=true,expansion=true]{microtype}
+% Math packages
+\usepackage{amsmath,amsfonts,amsthm} 
+\usepackage[pdftex]{graphicx}
+\usepackage{url}
+
+% Custom sectioning
+\usepackage{sectsty}
+\allsectionsfont{\centering \normalfont\scshape}
+
+
+% Custom headers/footers (fancyhdr package)
+\usepackage{fancyhdr}
+\pagestyle{fancyplain}
+% No page header
+\fancyhead{} 
+\fancyfoot[L]{}
+\fancyfoot[C]{}
+% Pagenumbering
+\fancyfoot[R]{\thepage}
+% Remove header underlines
+\renewcommand{\headrulewidth}{0pt}
+% Remove footer underlines
+\renewcommand{\footrulewidth}{0pt}
+\setlength{\headheight}{13.6pt}
+
+% Equation and float numbering
+
+% Equationnumbering: section.eq#
+\numberwithin{equation}{section}
+% Figurenumbering: section.fig#
+\numberwithin{figure}{section}
+% Tablenumbering: section.tab#
+\numberwithin{table}{section}
+
+% Maketitle metadata
+% Horizontal rule
+\newcommand{\horrule}[1]{\rule{\linewidth}{#1}} 
+
+\title{
+    % \vspace{-1in} 
+    \usefont{OT1}{bch}{b}{n}
+    \normalfont \normalsize \textsc{Jacobs University Bremen} \\ [25pt]
+    \horrule{0.5pt} \\[0.4cm]
+    \huge Support Vector Shapes for Range Images \\
+    \horrule{2pt} \\[0.5cm]
+}
+\author{
+    \normalfont \normalsize
+    Dzmitry Bahdanau\\[-3pt]\normalsize
+    \today
+}
+\date{}
