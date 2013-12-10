@@ -1,1 +1,111 @@
-The optimization problems \ref{svm1} and \ref{svm2} belong to theoretically well studied area: they are both quadratic optimization problems with linear constraints. While it guarantees the uniqueness of solution allows theoretical convergence proofs, finding a good solution for large SVM problems is challenging. The problem is active area of research, approaches include variations of decomposition method for classical quadratic optimization approaches such as Sequential Minimal Optimization method \cite{SMOplatt}, stochastic gradient descent based approaches such as SGD-QN \cite{bordes2009sgd} and many others (see a good survey \cite{largeSVM}).
+\subsection{Overview}
+
+The optimization problems \ref{svm1} and \ref{svm2} belong to theoretically well studied area: they are both quadratic optimization problems with linear constraints. While it guarantees the uniqueness of solution allows theoretical convergence proofs, finding a good solution for large SVM problems is challenging. The problem is active area of research, approaches include variations of decomposition method for classical quadratic optimization approaches such as Sequential Minimal Optimization method \cite{SMOplatt}, stochastic gradient descent based approaches such as SGD-QN \cite{bordes2009sgd} and many others (see a good survey \cite{largeSVM}). However, to the best of my knowledge none of them perform on typical for sensor data processing speeds for input sizes of several hundred thousands example (for instance Kinect sensor gives us $640 \cdot 480 \approx 3 \cdot 10^5$ points, and this number should be at least doubled since we need both positive and negative examples). To do it, we need essentially linear complexity, whereas in \cite{bordes2005fast} a lower bound $O(nS)$ is given, where $S$ is the number of support vectors. Experiments have shown, that depending on hyperparameters values $S$ is proportional to $n$ in our case, that means that none of the general SVM solvers suits.
+
+But this is the point where application specific solutions are usually developed. Learning the shape in details is a very local process, therefore it is highly expectable, that rather large value for $\gamma$ parameter is preferable. But in this case the $Q$ matrix will be very sparse. For example, if we work with Kinect scan and want decision function value for some point in space to depend only on its $\approx 300$ nearest neighbours, only $\approx 0.1\%$ of the $Q$ matrix will be significantly nonzero! Therefore a specially adapted for sparse matrices method is necessary. Having chosen SMO as the base method for its simplicity and availability of the reliable popular implementation LibSVM \cite{chang2011libsvm}, I adapt it for the sparse kernel matrix setup.
+
+\subsection{Sequential Minimal Optimization}
+This subsection describes in details how SMO is done in LibSVM.
+The SMO approach addresses the dual problem \ref{svm2}. The workflow of the SMO algorithm follows
+\begin{enumerate}
+\item
+Set initial $\bm{\alpha}$ vector to zero. 
+\item
+Choose some indices $i$ and $j$ and set $\alpha_i$ and $\alpha_j$ to their optimal with respect to target function and constrains values.
+\item
+Repeat step 2 while Karush-Kuhn-Tacker conditions for optimality of current $\bm{\alpha}$ are not satisfied with $\epsilon$ precision.
+\end{enumerate}
+The small 2-dimensional optimization problem on step 2 can be easily solved analytically (readers can find the formulas in \cite{chang2011libsvm}). The non-trivial part of the algorithm is the choice of pivot indices $i$ and $j$ (that are also called \textit{working set}) and the check of the stoping criteria. I start for the second question and the first will be resolved on the way.
+
+The KKT-conditions for the problem \ref{svm2} can be rewritten as:
+\begin{equation}
+\nabla_i g(\bm{\alpha}) + b y_i 
+\left\{
+\begin{array}{cc} 
+\geq 0 & \alpha_i < C \\
+\leq 0 & \alpha_i > 0
+\end{array}
+\right.
+\label{kkt1}
+\end{equation}
+for some $b$, where $g(\bm{\alpha})$ stands for the target function from the problem \ref{svm2}, $\nabla_i$ denotes partial derivative with respect to $\alpha_i$. In other words  they can be reformulated as 
+\begin{equation}
+m(\bm{\alpha}) \leq M(\bm{\alpha})	
+\label{kkt2}
+\end{equation}
+where
+\begin{eqnarray}
+m(\bm{\alpha}) = \underset{i \in I_{up}(\bm{\alpha})}{\max} -y_i \nabla_i g(\bm{\alpha}) \\
+M(\bm{\alpha}) = \underset{i \in I_{low}(\bm{\alpha})}{\min} -y_i \nabla_i g(\bm{\alpha}) \\
+I_{up}(\alpha) = 
+\left\{
+t|\alpha_t < C, y_t = 1 \textrm{ or }  \alpha_t > 0, y_t = -1
+\right\} \\
+I_{low}(\alpha) =
+\left\{
+t|\alpha_t < C, y_t = -1 \textrm{ or } \alpha_t > 0, y_t = 1 
+\right\}
+\end{eqnarray}
+To check that the algorithm almost converged the following approximate version is used:
+\begin{equation}
+m(\bm{\alpha}) - M(\bm{\alpha}) \leq \epsilon
+\label{kkt3}
+\end{equation}
+Having the gradient $\nabla g$ calculated the complexity of checking \ref{kkt3} takes linear time.
+
+The pivot indices $i$ and $j$ are chosen as follows:
+\begin{eqnarray}
+i \in \underset{t}{\argmax}
+\left\{ -y_t \nabla_t g(\bm{\alpha}) | t \in I_{up}(\bm{\alpha}) \right\} \\
+j \in \underset{t}{\argmin}
+\left\{
+-\frac{b_{it}^2}{a_{it}}| t \in I_{low} (\alpha), 
+-y_t \nabla_t g(\bm{\alpha}) < -y_i \nabla_i g(\bm{\alpha})
+\right\}
+\end{eqnarray}
+where
+\begin{eqnarray}
+a_{ts} = K(x_t, x_t) + K(x_s, x_s) - 2 K(x_t, x_s) \\ 
+b_{ts} = -y_t \nabla_t f(\bm{\alpha}) + y_s \nabla_s f(\bm{\alpha})
+\end{eqnarray}
+The procedure selects $i$ and $j$ approximately minimizing $g$ value (see \cite{chang2011libsvm}). The complexity of the procedure is linear, assuming the that the gradient is available.
+
+Finally, gradient is updated after each modification of $\alpha$. The formula for the gradient is
+\begin{equation}
+\nabla g(\bm{\alpha}) = \bm{\alpha}^T Q - \bm{e}^T
+\label{grad}
+\end{equation}
+
+\subsection{Sublinear iteration complexity for SMO}
+If $Q$ matrix is sparse, the stopping criteria calculation and working set selection can be dramatically speeded up. First, when $\alpha_t$ changes, the number of $\nabla$ elements which are subject to change equals to the number of non-zero elements in the $t$-th row of $Q$ (see \ref{grad}). 
+
+To fasten the check in \ref{kkt3}, I use an efficient data structure.
+
+\begin{figure}
+\centering
+\begin{forest}
+[a
+	[b
+		[...
+			[$v_1$]
+			[$v_2$]
+		]
+		[...
+			[$v_3$]
+			[$v_4$]
+		]
+	]
+	[c
+		[...
+			[$v_{n-3}$]
+			[$v_{n-2}$]
+		]
+		[...
+			[$v_{n-1}$]
+			[$v_{n}$]
+		]
+	]
+]
+\end{forest}
+\end{figure}
+
