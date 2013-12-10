@@ -1,0 +1,60 @@
+\subsection{Support Vector Machine}
+
+SVM is a practical, widely-used classification method \cite{cortes1995support}. Although there is a number of approaches to adapt it to multi-class classification and even to non-numeric data (for instance \cite{lodhi2002text}), the method authentically targets the standard two-class classification problem:
+
+\begin{quotation}
+\textit{Given a set of examples $X=\left\{ x_1, \ldots, x_n\right\} \subset \mathbb{R}^{d}$ and their class labels~$\left\{y_1,\ldots,y_n\right\}$,$y_i \in \left\{-1, +1\right\}$, find a function $f: \mathbb{R^d}\rightarrow \left\{-1, +1\right\}$ such that generalizes the observed two-class separation for unseen data.}
+\end{quotation} 
+The SVM approach to the problem can be summarized in the following way:
+\begin{enumerate}
+\item
+Using a non-linear map $\Phi$ the data $X$ is mapped into high- (infinite-) dimensional space $S$.
+\item
+In the space $S$ an optimal in some sense linear classifier is built, that is a vector $\bm{w}$ and an intercept $b$ is found such that separation of $S$ into two classes is given by $\sign(\bm{w}^T z + b), z \in S$.
+\item
+The classification function $f$ is obtained as $f(x) = \sign(\bm{w}^T \Phi(x))$.
+\end{enumerate}
+In this report I will use only one of the family of SVM algorithms called C-SVM. The $w$ vector in C-SVM approach is specified as the solution of the following optimization task:
+\begin{equation}
+\begin{array}{ccc}
+\underset{w,\xi,b}{\min} &
+\frac{1}{2}\bm{w}^T \bm{w} + C\sum\limits_{i=1}^n \xi_i \\
+\textrm{subject to} & y_i(\bm{w}^T \Phi(x_i) + b) \geq 1 - \xi_i \\
+& \xi_i \geq 0 & i=1,\ldots,n
+\end{array}
+\label{svm1}
+\end{equation}
+The minimization in \ref{svm1} means the search of hyperplane in $S$ which provides separation with a maximal soft margin between the classes. The sum of $\xi_i$ term stand for the softness of margin: there is a penalty for each object for being inside it or outside in the other class half-space.
+
+Because of high- (infinite-) dimension of the vector $w$ the dual problem is usually considered instead of \ref{svm1}:
+\begin{equation}
+\begin{array}{ccc}
+\underset{\mathbf{\bm{\alpha}}}{\min} & \frac{1}{2} \bm{\alpha}^T Q \bm{\alpha} - \bm{e}^T \bm{\alpha} \\
+\textrm{subject to} & \bm{y}^T \bm{\alpha} = 0 \\
+& 0 \leq \alpha_i \leq C & i=1,\ldots,n
+\end{array}
+\label{svm2}
+\end{equation}
+where $\bm{e}=\left(1,\ldots,1\right)^T$, $\bm{\alpha} = \left( \alpha_1, \ldots, \alpha_n \right)^T$, $Q$ is $n$-by-$n$ matrix, $Q_{ij}= y_i y_j \Phi^T(i) \Phi(j)$. In this context the scalar product $\Phi^T(x_i) \Phi(x_j)$ is usually interpreted as a value of the kernel function $K(x_i, x_j) = \Phi^T(x_i) \Phi(x_j)$. From the dual problem solution the vector $\bm{w}$ can be obtained using primal dual relationship:
+\begin{equation}
+\bm{w}=\sum\limits_{i=1}^n y_i \alpha_i \Phi(x_i)
+\end{equation}
+The resulting decision function is:
+\begin{equation}
+f(x) = \sign( \sum\limits_{i=1}^n y_i \alpha_i K(x_i, x)+ b)
+\end{equation}
+Only those vectors $x_i$ that have $\alpha_i > 0$ contribute to decision function. They are called \textit{support vectors} and give the name to the whole algorithm.
+
+After switching to the dual problem there is no need to deal with $\Phi$ anymore. Everything one needs to fully specify training problem is \textit{kernel function}. The easist one is $K(x_i, x_j) = x_i^T x_j$. The decision boundary $f(x)=0$ in this case is a hyperplane in $R^d$ that seldom corresponds to real data distribution. Therefore more complicated kernels are usually applied. Although a number of choices for the kernel function are available and many papers related are written (for instance \cite{lin2003study}), in this report I will use only general-purpose RBF-kernel:
+\begin{equation}
+K(x_i, x_j) = e^{-\gamma ||x_i - x_j||^2}
+\end{equation}
+Its relevant properties are:
+\begin{enumerate}
+\item
+This kernel is symmetric in a way that it depends only on the distance between the vectors. The decision function then has easy to interpret geometric meaning: it is sum of influences of neighboring in Euclidean sense suppor vectors.
+\item
+$0 \leq K(x_i, x_j) \leq 1$ means that contribution of each support vector is limited, that promises robustness. 
+\item
+$e^{-x^2}$ decreases very fast as $x$ tends to $0$. The benefit is that for some values of $\gamma$ parameter, matrix $Q$ contains a lot of negligibly small elements.
+\end{enumerate}

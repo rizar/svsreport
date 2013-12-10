@@ -13,7 +13,6 @@
 \usepackage{sectsty}
 \allsectionsfont{\centering \normalfont\scshape}
 
-
 % Custom headers/footers (fancyhdr package)
 \usepackage{fancyhdr}
 \pagestyle{fancyplain}
@@ -28,6 +27,8 @@
 % Remove footer underlines
 \renewcommand{\footrulewidth}{0pt}
 \setlength{\headheight}{13.6pt}
+
+\usepackage{bm}
 
 % Equation and float numbering
 
@@ -56,3 +57,6 @@
     \today
 }
 \date{}
+
+\DeclareMathOperator{\sign}{sign}
+\DeclareMathOperator{\argmin}{argmin}
