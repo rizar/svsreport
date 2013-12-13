@@ -56,12 +56,12 @@ Having the gradient $\nabla g$ calculated the complexity of checking \ref{kkt3} 
 The pivot indices $i$ and $j$ are chosen as follows:
 \begin{eqnarray}
 i \in \underset{t}{\argmax}
-\left\{ -y_t \nabla_t g(\bm{\alpha}) | t \in I_{up}(\bm{\alpha}) \right\} \\
+\left\{ -y_t \nabla_t g(\bm{\alpha}) | t \in I_{up}(\bm{\alpha}) \right\} \label{idef}\\
 j \in \underset{t}{\argmin}
 \left\{
 -\frac{b_{it}^2}{a_{it}}| t \in I_{low} (\alpha), 
 -y_t \nabla_t g(\bm{\alpha}) < -y_i \nabla_i g(\bm{\alpha})
-\right\}
+\right\} \label{jdef}
 \end{eqnarray}
 where
 \begin{eqnarray}
@@ -79,33 +79,65 @@ Finally, gradient is updated after each modification of $\alpha$. The formula fo
 \subsection{Sublinear iteration complexity for SMO}
 If $Q$ matrix is sparse, the stopping criteria calculation and working set selection can be dramatically speeded up. First, when $\alpha_t$ changes, the number of $\nabla$ elements which are subject to change equals to the number of non-zero elements in the $t$-th row of $Q$ (see \ref{grad}). 
 
-To fasten the check in \ref{kkt3}, I use an efficient data structure.
+To fasten the check in \ref{kkt3}, I use an efficient data structure. Let 
+\begin{eqnarray}
+v_i=\begin{cases}
+-y_i \nabla_i g(\bm{\alpha}) & i \in I_{up}(\bm{\alpha}) \\
+-\infty & \textrm{otherwise}
+\end{cases} \\
+v_{i,j} = \max\limits_{i \leq t \leq j} v_t
+\end{eqnarray}
+One can see that $v_{1,n}=m(\bm{\alpha})$. Some of $v_{i,j}$ values can be organized in a binary tree of depth $\Ceil{\log_2(n) + 1}$ as illustrated in figure \ref{vtree}. When a modification of the gradient is done, a value in one of the leaf nodes changes. Using a recursive procedure the update is propagated further to upper levels. Thus the $m(\bm{\alpha})$ value is always known at the cost of $O(\log n)$ worst case gradient element modification. An early stop heuristics is also applied: if at some point of update propagation some $v_{i,j}$ value doesn't change it doesn't make sense to continue. Under assumption that this case has the same probability as the case of changed value, one can argue that the propagation procedure has average-case complexity $O(1)$.
+
+For $M(\bm{\alpha})$ calculation the same data structure can be used. The $i$ index can be also extracted from the tree, using its definition as $\argmax$ in \ref{idef}. The $j$ index is chosen as $\max\left\{j_1, j_2\right\}$, where $j_1$ is obtained 
+from a limited version of \ref{jdef}: only those $t$ are considered for which $K(x_i, x_t) > 0$. For all other $t$ the $a_{it}$ term is always $2$; thus a best choice for them is
+\begin{equation}
+j_2 = \underset{t \in I_{low}(\bm{\alpha})}{\argmin} -y_t \nabla_t g(\bm{\alpha})
+\end{equation}
+This $j_2$ value can extracted from the tree for $M(\bm{\alpha})$ calculation.
+
+Summarizing countdown shows, that the average complexity of SMO iteration becomes $O(l + \log n)$, where $l$ is the average number of non-zero elements in $Q$ matrix row. Indeed, the choice of $i$ requires
+$O(\log n)$ operations to walk down the tree, the choice of $j$ costs the same plus $O(l)$ time to iterate all the $i$ neighbors. After the choice is done $O(l)$ gradient modifications require $O(l)$ operations, since each of them has $O(1)$ average-case complexity. Finally the stopping criteria check takes $O(1)$ as all the necessary data is available on top of the trees.
 
 \begin{figure}
 \centering
 \begin{forest}
-[a
-	[b
+[$v_{1,n}$, 
+	[$v_{1,\Floor{n/2}}$
 		[...
-			[$v_1$]
-			[$v_2$]
+			[$v_{1,2}$
+				[$v_1$]
+				[$v_2$]
+			]
 		]
 		[...
-			[$v_3$]
-			[$v_4$]
+			[$v_{3,4}$
+				[$v_3$]
+				[$v_4$]
+			]
 		]
 	]
-	[c
+	[$v_{\Floor{n/2}+1							,n}$
 		[...
-			[$v_{n-3}$]
-			[$v_{n-2}$]
+			[$v_{n-3,n-2}$
+				[$v_{n-3}$]
+				[$v_{n-2}$]
+			]
 		]
 		[...
-			[$v_{n-1}$]
-			[$v_{n}$]
+			[$v_{n-1,n}$
+				[$v_{n-1}$]
+				[$v_{n}$]
+			]
 		]
 	]
 ]
 \end{forest}
+\label{vtree}
+\caption{Binary tree of $v_{i,j}$ values}
 \end{figure}
+
+\subsection{Extracting Q structure from range images}
+The points of range image are organized in $2D$ grid according to their spatial position. This property allows quick approximate search of all neighbors of given range image point $p$ within given radius~$R$. Assume that for the points in the vicinity of $p$ the distance to the nearest neighbor is $\approx \rho$ (this distance I will later refer to as the \textit{local resolution} of the range image at point $p$). Than it is enough to consider the $r$ by $r$ square with the center in $p$, where $r=\Ceil{\frac{R}{\rho}}$. The points of the square can be than iterated with their distance to $p$ being checked to be less than $R$.
+
 
