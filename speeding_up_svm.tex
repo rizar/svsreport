@@ -137,7 +137,3 @@ $O(\log n)$ operations to walk down the tree, the choice of $j$ costs the same p
 \caption{Binary tree of $v_{i,j}$ values}
 \end{figure}
 
-\subsection{Extracting Q structure from range images}
-The points of range image are organized in $2D$ grid according to their spatial position. This property allows quick approximate search of all neighbors of given range image point $p$ within given radius~$R$. Assume that for the points in the vicinity of $p$ the distance to the nearest neighbor is $\approx \rho$ (this distance I will later refer to as the \textit{local resolution} of the range image at point $p$). Than it is enough to consider the $r$ by $r$ square with the center in $p$, where $r=\Ceil{\frac{R}{\rho}}$. The points of the square can be than iterated with their distance to $p$ being checked to be less than $R$.
-
-

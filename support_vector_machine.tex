@@ -24,7 +24,7 @@ In this report I will use only one of the family of SVM algorithms called C-SVM.
 \end{array}
 \label{svm1}
 \end{equation}
-The minimization in \ref{svm1} means the search of hyperplane in $S$ which provides separation with a maximal soft margin between the classes. The sum of $\xi_i$ term stand for the softness of margin: there is a penalty for each object for being inside it or outside in the other class half-space.
+where $C$ is regularization parameter. The minimization in \ref{svm1} means the search of hyperplane in $S$ which provides separation with a maximal soft margin between the classes. The sum of $\xi_i$ term stand for the softness of margin: there is a penalty for each object for being inside it or outside in the other class half-space.
 
 Because of high- (infinite-) dimension of the vector $w$ the dual problem is usually considered instead of \ref{svm1}:
 \begin{equation}
@@ -45,6 +45,12 @@ f(x) = \sign( \sum\limits_{i=1}^n y_i \alpha_i K(x_i, x)+ b)
 \end{equation}
 Only those vectors $x_i$ that have $\alpha_i > 0$ contribute to decision function. They are called \textit{support vectors} and give the name to the whole algorithm.
 
+The dual problem gives nice interpretation for the regularization parameter $C$: it serves as an upper bound on support vector weights $\alpha_i$. Using large enough $C$ the SVM can fully learn any training set (as long as it doesn't contain two similar objects with different labels). But this also means that it becomes extremely noise sensitive: the correct response for noisy pairs $(x_i, y_i)$ is obtained at the cost of building wrong model. The good value for $C$ is usually chosen for each new data source via crossvalidation. Having $C$ and $\alpha_i$ values gives important information about the sample $x_i$ \cite{burges1998tutorial}:
+\begin{eqnarray}
+0 < \alpha_i < C \Rightarrow \textrm{$x_i$ lies on the margin boundary and is classified properly} \\
+\alpha_i = C \Rightarrow \textrm{$x_i$ breaks the margin boundary (can still be classified properly)}
+\end{eqnarray}
+
 After switching to the dual problem there is no need to deal with $\Phi$ anymore. Everything one needs to fully specify training problem is \textit{kernel function}. The easist one is $K(x_i, x_j) = x_i^T x_j$. The decision boundary $f(x)=0$ in this case is a hyperplane in $R^d$ that seldom corresponds to real data distribution. Therefore more complicated kernels are usually applied. Although a number of choices for the kernel function are available and many papers related are written (for instance \cite{lin2003study}), in this report I will use only general-purpose RBF-kernel:
 \begin{equation}
 K(x_i, x_j) = e^{-\gamma ||x_i - x_j||^2}
@@ -58,3 +64,4 @@ $0 \leq K(x_i, x_j) \leq 1$ means that contribution of each support vector is li
 \item
 $e^{-x^2}$ decreases very fast as $x$ tends to $0$. The benefit is that for some values of $\gamma$ parameter, matrix $Q$ contains a lot of negligibly small elements.
 \end{enumerate}
+The only parameter of RBF-kernel is the scaling parameter $\gamma$. Multiplying $\gamma$ by $k^2$ is equivalent to $k$-times contraction of the kernel. In classification applications the crossvalidation is typically done to set $\gamma$ value.
