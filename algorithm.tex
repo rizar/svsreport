@@ -26,6 +26,7 @@ Using this approximate search algorithm the row of the $Q$ can be calculated on 
 To find the feature points I start with the calculation of the gradient norm $||\nabla f||$ in all the range image points. The points in which the local maximum is reached are used as feature points. To check for local maximum in point $p$ I consider all the neighbors within the radius $R_{FP}$ and check that the gradient norm in all these points is less than in $p$.
 
 \subsection{Parameters}
+\label{sec:params}
 The described feature extraction scheme has a lot of parameters and a systematic way for choosing them is required. This subsection describes one way do it: I start with a main parameter $\sigma$ called \textit{support size}. The support size specifies the level of details the algorithm should capture. As the final choice of feature points depends on the decision function it is natural to interpret $\sigma$ as the diameter of the ball which is large enough to discard all the support vectors that did not fall into it while computing the decision function in the ball center. The complementary parameters to $\sigma$ are two kernel thresholds $K_1$ and $K_2$. The $K_1$ is used to set the $\gamma$ parameter of the SVM in the following way:
 \begin{equation}
 \gamma = \frac{-4 \log (K_1)}{\sigma^2}
